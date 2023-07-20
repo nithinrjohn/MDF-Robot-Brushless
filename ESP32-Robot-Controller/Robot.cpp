@@ -60,32 +60,29 @@ void team967::Robot::begin()
 
 }
 
-void team967::Robot::blueLight(bool state)
+bool team967::Robot::runAuto(void (*autoFunc)())
 {
-    if(state)
-    {
-        digitalWrite(ESP32_ONBOARD_LED, HIGH);
-    }
-    else if(!state)
-    {
-        digitalWrite(ESP32_ONBOARD_LED, LOW);
-    }
-}
-
-void team967::Robot::runAuto(void (*autoFunc)())
-{
-    if(gameController.isButtonPressed(CROSS) && firstTimeAuto)
+    if(gameController.isButtonPressed(TRIANGLE) && firstTimeAuto)
     {
         firstTimeAuto = false;
         autoFunc();
     }
+    else if(gameController.isButtonPressed(CROSS) && firstTimeAuto)
+    {
+        firstTimeAuto = false;
+    }
+    return !firstTimeAuto;
 }
 
-void team967::Robot::drive()
+void team967::Robot::arcadeDrive()
 {
-    if(!firstTimeAuto)
+    if(gameController.isButtonPressed(CIRCLE))
     {
-        short left = -gameController.getLeftStickY() + gameController.getRightStickX();
+        stopMotors();
+    }
+    else
+    {
+        short left = gameController.getLeftStickY() + gameController.getRightStickX();
         short right = -gameController.getLeftStickY() - gameController.getRightStickX();
 
         left = (left > 127) ? 127 : left;
@@ -93,8 +90,66 @@ void team967::Robot::drive()
         right = (right > 127) ? 127 : right;
         right = (right < -128) ? -128 : right;
 
-        motors[LEFT].servo.write(1500 + left*3);
-        motors[RIGHT].servo.write(1500 + right*3);
+        float clamp = 3.90625;
+
+        motors[LEFT].servo.write(1500 + left*clamp);
+        motors[RIGHT].servo.write(1500 + right*clamp);
+    }
+}
+
+void team967::Robot::tankDrive()
+{
+    if(gameController.isButtonPressed(CIRCLE))
+    {
+        stopMotors();
+    }
+    else
+    {
+        short left = gameController.getLeftStickY();
+        short right = gameController.getRightStickY();
+
+        left = (left > 127) ? 127 : left;
+        left = (left < -128) ? -128 : left;
+        right = (right > 127) ? 127 : right;
+        right = (right < -128) ? -128 : right;
+
+        float clamp = 3.90625;
+
+        motors[LEFT].servo.write(1500 + left*clamp);
+        motors[RIGHT].servo.write(1500 + right*clamp);
+    }
+}
+
+void team967::Robot::dPadDrive()
+{
+    if(gameController.isButtonPressed(CIRCLE))
+    {
+        stopMotors();
+    }
+    else if(gameController.isButtonPressed(D_UP))
+    {
+        motors[LEFT].setPower(1);
+        motors[RIGHT].setPower(1);
+    }
+    else if(gameController.isButtonPressed(D_DOWN))
+    {
+        motors[LEFT].setPower(-1);
+        motors[RIGHT].setPower(-1);
+    }
+    else if(gameController.isButtonPressed(D_RIGHT))
+    {
+        motors[LEFT].setPower(0);
+        motors[RIGHT].setPower(1);
+    }
+    else if(gameController.isButtonPressed(D_LEFT))
+    {
+        motors[LEFT].setPower(1);
+        motors[RIGHT].setPower(0);
+    }
+    else
+    {
+        motors[LEFT].setPower(0);
+        motors[RIGHT].setPower(0);
     }
 }
 
@@ -107,37 +162,37 @@ void team967::Robot::stopMotors()
 
 void team967::Robot::rollers()
 {
-    if(!firstTimeAuto)
+    if(gameController.isButtonPressed(LEFT_TRIGGER)) {
+        motors[FRONT_ROLLER].setPower(1);
+        motors[MID_ROLLER].setPower(1);
+    }
+    else if(gameController.isButtonPressed(RIGHT_TRIGGER))
     {
-        if(gameController.isButtonPressed(LEFT_TRIGGER)) {
-            motors[FRONT_ROLLER].setPower(1);
-            motors[MID_ROLLER].setPower(1);
-        }
-        else if(gameController.isButtonPressed(RIGHT_BUMP))
+        power = 1;
+        motors[FLYWHEEL].setPower(power);
+        shot = true;
+    }
+    else if(gameController.isButtonPressed(RIGHT_BUMP))
+    {
+        motors[MID_ROLLER].setPower(1);
+    }
+    else
+    {
+        if(shot)
         {
-            motors[MID_ROLLER].setPower(1);
+            power -= 0.0001;
+            motors[FLYWHEEL].setPower(power);
+            if(power <= 0)
+            {
+                shot = false;
+            }
         }
-        else if(gameController.isButtonPressed(RIGHT_TRIGGER))
-        {
-            motors[FLYWHEEL].setPower(1);
-            // if(shoot_time == 0)
-            // {
-            //     shoot_time = esp_timer_get_time();
-            // }
-            // if((esp_timer_get_time() - shoot_time) > (powerUpTime * 1000000))
-            // {
-            //     motors[MID_ROLLER].setPower(1);
-            // }
-        }
-        else
-        {
-            //shoot_time = 0;
-            motors[FRONT_ROLLER].setPower(0);
-            motors[MID_ROLLER].setPower(0);
-            motors[FLYWHEEL].setPower(0);
-        }
+        motors[FRONT_ROLLER].setPower(0);
+        motors[MID_ROLLER].setPower(0);
     }
 }
+
+//auto
 
 void team967::Robot::shoot(float power)
 {

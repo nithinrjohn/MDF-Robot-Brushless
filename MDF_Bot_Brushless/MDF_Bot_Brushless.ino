@@ -1,7 +1,7 @@
 #include <GameController.h>
 #include <Robot.h>
 
-using namespace team967;
+using namespace team967; 
 
 GameController gameController("00:00:00:00:00:00");  
 
@@ -9,7 +9,7 @@ Robot robot(gameController);
 
 void setup() {  
   robot.begin();
-}
+}  
 
 void autonomous() {
   Serial.println("ran auto");
@@ -17,14 +17,17 @@ void autonomous() {
 }
 
 void loop() {
-  robot.runAuto(&autonomous);
+  bool ranAuto = robot.runAuto(&autonomous);
 
   if(gameController.isConnected()) {
-    robot.blueLight(ON);
-    robot.drive();
-    robot.rollers();
+    digitalWrite(ESP32_ONBOARD_LED, HIGH);
   }
   else {    
-    robot.blueLight(OFF);
+    digitalWrite(ESP32_ONBOARD_LED, LOW);
+  }
+  if(gameController.isConnected() && ranAuto) {
+
+    robot.tankDrive();
+    robot.rollers();
   }
 }

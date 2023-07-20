@@ -9,39 +9,39 @@
 
 namespace team967 {
 
-    const bool ON = true;
-    const bool OFF = false;
-
     const int LEFT = 0;
     const int RIGHT = 1;
     const int BOTH = 2;
     const int FRONT_ROLLER = 2;
     const int MID_ROLLER = 3;
     const int FLYWHEEL = 4;
-    //must be between 1 and 0
-    const float driveSpeedMultiplier = 1;
 
     class Robot {
         private:
-            uint64_t shoot_time = 0;
-            int powerUpTime = 2;
             GameController gameController;
             bool firstTimeAuto = true;
+            bool shot = false;
+            float power = 1;
         public:
             Motor motors[5] {
                 Motor(LEFT, PCB_GPIO_0),
                 Motor(RIGHT, PCB_GPIO_1),
-                Motor(FRONT_ROLLER, PCB_GPIO_2),
+                Motor(FRONT_ROLLER, PCB_GPIO_5),
                 Motor(MID_ROLLER, PCB_GPIO_3),
                 Motor(FLYWHEEL, PCB_GPIO_4)
             };
+
             Robot(GameController &gc);
+
             void begin();
-            void blueLight(bool state);
-            void runAuto(void (*autoFunc)());
-            void drive();
+            bool runAuto(void (*autoFunc)());
             void stopMotors();
-            void rollers();
+            void rollers(); 
+            void dPadDrive();
+            void tankDrive();
+            void arcadeDrive();
+
+            //auto
             void shoot(float power);
             void intake(int seconds);
             void move(float power, int seconds);
